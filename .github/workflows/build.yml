@@ -1,0 +1,54 @@
+# Builds `ns` for Windows, Linux and macOS on every push and pull request (kept as workflow artifacts), and attaches
+# the binaries to a GitHub release when one is published. Each build also decompiles and recompiles a script as a
+# smoke test.
+name: Build
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, goos: windows, goarch: amd64, ext: .exe }
+          - { os: windows-latest, goos: windows, goarch: "386", ext: .exe }
+          - { os: ubuntu-latest, goos: linux, goarch: amd64, ext: "" }
+          - { os: macos-latest, goos: darwin, goarch: arm64, ext: "" }
+          - { os: macos-13, goos: darwin, goarch: amd64, ext: "" }
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      CGO_ENABLED: "0"
+      GOFLAGS: -mod=mod
+      NS: dist/ns-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.12"
+      - name: Build
+        shell: bash
+        run: go build -trimpath -ldflags="-s -w" -o "$NS" ./cmd/ns
+      - name: Smoke test (compile, decompile, compile again - the same bytes)
+        shell: bash
+        run: |
+          "$NS" -c compiler/tests/neverscript.ns -o smoke1.qb -targetGame thug2
+          "$NS" -d smoke1.qb -o smoke.ns
+          "$NS" -c smoke.ns -o smoke2.qb -targetGame thug2
+          cmp smoke1.qb smoke2.qb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ns-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ env.NS }}
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "$NS" --clobber

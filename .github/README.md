@@ -1,3 +1,11 @@
+> **This fork:** [violetvandal/NeverScript](https://github.com/violetvandal/NeverScript) (THUG2 support, itself a fork
+> of [byxor/NeverScript](https://github.com/byxor/NeverScript)) as used by the
+> [THUG2 decompilation](https://github.com/CanuckAussieKev/thug2-decomp) and its level converters. Branches:
+> `master` follows violetvandal's; `lenient` adds `ns -lenient` (decompiles malformed QB that other tools let
+> through - unclosed brackets, 0x00 padding - marking what it closed with `/* lenient: ... */`; offered upstream);
+> `thug2` (the default) is `lenient` plus a build of `ns` for Windows, Linux and macOS on every push
+> (`.github/workflows/build.yml`). All credit for NeverScript goes to byxor, violetvandal and their contributors.
+
 ```ascii
      __                    __           _       _   
   /\ \ \_____   _____ _ __/ _\ ___ _ __(_)_ __ | |_ 
