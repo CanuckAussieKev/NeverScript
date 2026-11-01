@@ -16,11 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, goos: windows, goarch: amd64, ext: .exe }
-          - { os: windows-latest, goos: windows, goarch: "386", ext: .exe }
-          - { os: ubuntu-latest, goos: linux, goarch: amd64, ext: "" }
-          - { os: macos-latest, goos: darwin, goarch: arm64, ext: "" }
-          - { os: macos-13, goos: darwin, goarch: amd64, ext: "" }
+          - { os: windows-latest, goos: windows, goarch: amd64, ext: .exe, smoke: true }
+          - { os: windows-latest, goos: windows, goarch: "386", ext: .exe, smoke: true }
+          - { os: ubuntu-latest, goos: linux, goarch: amd64, ext: "", smoke: true }
+          - { os: macos-latest, goos: darwin, goarch: arm64, ext: "", smoke: true }
+          # (cross-compiled: no Intel macOS runner to run it on)
+          - { os: macos-latest, goos: darwin, goarch: amd64, ext: "", smoke: false }
     env:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
@@ -36,6 +37,7 @@ jobs:
         shell: bash
         run: go build -trimpath -ldflags="-s -w" -o "$NS" ./cmd/ns
       - name: Smoke test (compile, decompile, compile again - the same bytes)
+        if: matrix.smoke
         shell: bash
         run: |
           "$NS" -c compiler/tests/neverscript.ns -o smoke1.qb -targetGame thug2
